@@ -1,7 +1,8 @@
 #include <chrono>
 #include <iostream>
 #include <thread>
-#include <nlohmann/json.hpp>
+#include <sstream>
+#include <regex>
 
 #include "agent_sdk/agent.h"
 #include "agent_sdk/config.h"
@@ -9,7 +10,6 @@
 #include "agent_sdk/tool.h"
 
 using namespace openagent;
-using json = nlohmann::json;
 
 int main() {
     std::cout << "Initializing OpenAgent SDK Tool Call Example..." << std::endl;
@@ -43,20 +43,14 @@ int main() {
     echo_def.execute_func = [](const std::string& args, const ToolContext& ctx) -> ToolExecutionResult {
         std::cout << "[Echo Tool] Called with args: " << args << std::endl;
 
-        // 解析参数
-        json params;
-        try {
-            params = json::parse(args);
-        } catch (const std::exception& e) {
-            ToolExecutionResult result;
-            result.title = "Echo Tool Error";
-            result.output = "Error parsing arguments: " + std::string(e.what());
-            result.success = false;
-            result.error = e.what();
-            return result;
+        // 使用正则表达式解析参数
+        std::regex text_pattern("\"text\"\\s*:\\s*\"([^\"]*)\"");
+        std::smatch matches;
+        
+        std::string text = "No text provided";
+        if (std::regex_search(args, matches, text_pattern)) {
+            text = matches[1].str();
         }
-
-        std::string text = params.value("text", "No text provided");
 
         ToolExecutionResult result;
         result.title = "Echo Tool Result";
@@ -93,21 +87,25 @@ int main() {
     calc_def.execute_func = [](const std::string& args, const ToolContext& ctx) -> ToolExecutionResult {
         std::cout << "[Calculator] Called with args: " << args << std::endl;
 
-        json params;
-        try {
-            params = json::parse(args);
-        } catch (const std::exception& e) {
-            ToolExecutionResult result;
-            result.title = "Calculator Error";
-            result.output = "Error parsing arguments: " + std::string(e.what());
-            result.success = false;
-            result.error = e.what();
-            return result;
+        // 使用正则表达式解析参数
+        std::regex op_pattern("\"operation\"\\s*:\\s*\"([^\"]*)\"");
+        std::regex a_pattern("\"a\"\\s*:\\s*(-?\\d+\\.?\\d*)");
+        std::regex b_pattern("\"b\"\\s*:\\s*(-?\\d+\\.?\\d*)");
+        
+        std::smatch op_matches, a_matches, b_matches;
+        
+        std::string operation = "";
+        double a = 0.0, b = 0.0;
+        
+        if (std::regex_search(args, op_matches, op_pattern)) {
+            operation = op_matches[1].str();
         }
-
-        std::string operation = params.value("operation", "");
-        double a = params.value("a", 0.0);
-        double b = params.value("b", 0.0);
+        if (std::regex_search(args, a_matches, a_pattern)) {
+            a = std::stod(a_matches[1].str());
+        }
+        if (std::regex_search(args, b_matches, b_pattern)) {
+            b = std::stod(b_matches[1].str());
+        }
         
         double result_val = 0.0;
         std::string output;
@@ -189,7 +187,13 @@ int main() {
     // 设置消息处理器以观察消息流
     agent->setMessageHandler([](const Message& msg) {
         std::cout << "Message received - Type: " << static_cast<int>(msg.getType()) 
-                  << ", Content: " << msg.getContent() << std::endl;
+                  << ", Content: ";
+        
+        // 输出消息内容
+        for (const auto& content : msg.getContents()) {
+            std::cout << content.text << " ";
+        }
+        std::cout << std::endl;
         
         if (!msg.getToolCalls().empty()) {
             std::cout << "Tool calls detected:" << std::endl;

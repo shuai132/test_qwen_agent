@@ -41,6 +41,20 @@ set(AGENT_SDK_SOURCES
     src/mcp_client.cpp
     src/subagent.cpp
     src/context_manager.cpp
+    src/tools/bash_tool.cpp
+    src/tools/read_tool.cpp
+    src/tools/glob_tool.cpp
+    src/tools/grep_tool.cpp
+    src/tools/edit_tool.cpp
+    src/tools/write_tool.cpp
+    src/tools/task_tool.cpp
+    src/tools/skill_tool.cpp
+    src/tools/web_search_tool.cpp
+    src/tools/web_fetch_tool.cpp
+    src/tools/code_search_tool.cpp
+    src/tools/apply_patch_tool.cpp
+    src/tools/question_tool.cpp
+    src/tools/built_in_tools.cpp
 )
 
 # 创建库
@@ -98,6 +112,20 @@ if(BUILD_TESTS)
         ${CMAKE_CURRENT_SOURCE_DIR}/include
     )
     
+    # 添加测试可执行文件
+    add_executable(test_tools
+        tests/test_tools.cpp
+    )
+
+    target_link_libraries(test_tools
+        agent_sdk
+        gtest_main
+    )
+
+    target_include_directories(test_tools PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+    )
+
     # 添加测试命令
     add_test(NAME agent_sdk_unit_tests
              COMMAND agent_sdk_tests
@@ -116,13 +144,29 @@ if(BUILD_EXAMPLES)
         examples/tool_call_example.cpp
     )
 
+    add_executable(basic_tool_usage
+        examples/basic_tool_usage.cpp
+    )
+
+    add_executable(built_in_tools_example
+        examples/built_in_tools_example.cpp
+    )
+
     target_link_libraries(simple_agent_example agent_sdk)
     target_link_libraries(tool_call_example agent_sdk)
-    
+    target_link_libraries(basic_tool_usage agent_sdk)
+    target_link_libraries(built_in_tools_example agent_sdk)
+
     target_include_directories(simple_agent_example PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
     )
     target_include_directories(tool_call_example PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+    )
+    target_include_directories(basic_tool_usage PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+    )
+    target_include_directories(built_in_tools_example PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
     )
 endif()
