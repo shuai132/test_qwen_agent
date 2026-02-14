@@ -1,178 +1,160 @@
-# Agent SDK 项目概述
+# C++ Agent SDK
 
-## 项目目的
+## 项目概述
 
-Agent SDK 是一个 C++ 库，旨在促进智能代理的创建和管理。它提供了一个全面的框架，用于构建能够与大语言模型交互、管理对话、执行工具以及处理复杂工作流（包括子代理和上下文管理）的代理。
+Agent SDK 是一个用 C++ 编写的库，旨在促进能够与语言模型交互并执行各种工具的智能代理的创建。SDK 提供了一个灵活的框架，用于构建能够处理复杂对话、管理上下文并执行工具来执行操作的代理。
 
-## 架构
+### 主要特性
 
-SDK 采用模块化架构，包含以下关键组件：
+- **代理框架**: 用于创建和管理智能代理的核心基础设施
+- **工具系统**: 可扩展的工具框架，内置常用操作的工具
+- **消息处理**: 支持各种内容类型和工具调用的结构化消息系统
+- **会话管理**: 具有可配置超时和上下文限制的健壮会话管理
+- **MCP 集成**: 支持模型上下文协议 (MCP) 服务器
+- **内置工具**: 用于文件操作、shell 命令、网络搜索等的预建工具
 
-### 核心组件
+### 架构
 
-- **Agent**: 表示智能代理的主要类，管理代理生命周期、工具和会话
-- **Message**: 表示对话消息，支持不同类型（用户、助手、系统、工具调用、工具结果）
-- **Tool**: 定义代理可以使用的可执行函数，带有参数的 JSON schema
-- **Session**: 管理对话状态、消息历史和上下文溢出处理
-- **AgentLoop**: 处理消息的主要执行循环，协调代理行为
+SDK 由几个核心组件组成：
 
-### 高级特性
+- **Agent**: 协调对话和工具执行的主要代理类
+- **Message**: 表示支持文本、工具调用和结果的对话消息
+- **Tool**: 用于创建具有 JSON 模式验证的可执行工具的抽象接口
+- **Session**: 管理对话状态和上下文
+- **Config**: 用于自定义代理行为的配置结构
 
-- **MCP Client**: 实现 Model Context Protocol，用于连接外部服务和工具
-- **Subagent Manager**: 启用具有子代理的分层任务管理
-- **Context Manager**: 处理上下文溢出检测和消息压缩
-- **Tool Registry**: 集中管理可用工具
+### 内置工具
+
+SDK 包括以下几种内置工具：
+
+- `bash_tool`: 执行 shell 命令
+- `read_tool`: 读取文件内容
+- `write_tool`: 将内容写入文件
+- `edit_tool`: 编辑文件内容
+- `glob_tool`: 使用 glob 模式查找文件
+- `grep_tool`: 在文件中搜索模式
+- `web_search_tool`: 执行网络搜索
+- `web_fetch_tool`: 从 URL 获取内容
+- `task_tool`: 将任务委托给专业子代理
+- `skill_tool`: 执行专业技能
+- `question_tool`: 向用户提问
+- `apply_patch_tool`: 应用补丁到文件
+- `code_search_tool`: 搜索代码库
 
 ## 构建和运行
 
 ### 先决条件
 
-- C++20 兼容编译器（GCC、Clang 或 MSVC）
-- CMake 3.20 或更高版本
-- Asio 库（仅头文件）
+- C++20 兼容编译器 (GCC 8+, Clang 7+, MSVC 2019+)
+- CMake 3.20+
+- Asio 库 (仅头文件)
+- Git (用于获取依赖项)
 
 ### 构建说明
 
 ```bash
-mkdir build
-cd build
+# 克隆仓库
+git clone <repository-url>
+cd agent-sdk
+
+# 创建构建目录
+mkdir build && cd build
+
+# 使用 CMake 配置
 cmake ..
-make
-```
 
-### 构建选项
+# 构建项目
+make -j$(nproc)
 
-- `BUILD_TESTS`（默认开启）：使用 Google Test 构建单元测试
-- `BUILD_EXAMPLES`（默认开启）：构建示例应用程序
-
-### 运行测试
-
-```bash
-cd build
+# 可选地运行测试
 ctest
-# 或直接运行测试可执行文件：
-./bin/agent_sdk_tests
 ```
 
-### 运行示例
+### 使用 SDK
 
-```bash
-cd build
-./bin/simple_agent_example
+要在您的项目中使用 SDK，请链接到 `agent_sdk` 库并包含头文件：
+
+```cpp
+#include "agent_sdk/agent.h"
+#include "agent_sdk/config.h"
+#include "agent_sdk/message.h"
+#include "agent_sdk/tool.h"
+
+using namespace openagent;
+
+// 创建配置
+Config config;
+config.id = "my_agent";
+config.name = "My Agent";
+config.model = "gpt-4";
+config.api_key = "your-api-key";
+config.base_url = "https://api.example.com/v1";
+
+// 创建代理
+auto agent = std::make_shared<Agent>(config);
+
+// 添加工具
+agent->addTool(BashTool::create());
+
+// 运行代理
+agent->run("session_id");
 ```
 
-## 关键特性
+### 示例
 
-### 1. 消息处理
+SDK 在 `examples/` 目录中包含多个示例：
 
-SDK 支持丰富的消息类型，包括：
+- `simple_agent.cpp`: 基本代理设置和使用
+- `tool_call_example.cpp`: 演示工具调用功能
+- `basic_tool_usage.cpp`: 显示如何使用内置工具
+- `built_in_tools_example.cpp`: 使用各种内置工具的示例
 
-- 用户和助手消息
-- 系统消息
-- 工具调用和结果
-- 多模态内容支持
+## 开发规范
 
-### 2. 工具集成
+### 编码标准
 
-- 使用 JSON schema 验证定义自定义工具
-- 同步或异步执行工具
-- 自动工具注册和发现
-- 通过 MCP（Model Context Protocol）支持外部工具
-
-### 3. 上下文管理
-
-- 自动上下文溢出检测
-- 智能消息压缩和修剪
-- 令牌计数和估算
-- 会话状态管理
-
-### 4. 子代理支持
-
-- 分层任务分解
-- 子会话管理
-- 父子代理之间的任务协调
-
-### 5. 配置管理
-
-全面的配置选项，包括：
-
-- 模型选择和 API 设置
-- 上下文窗口限制
-- 工具启用/禁用
-- 超时和重试配置
-- MCP 服务器设置
-
-## 开发约定
-
-### 代码风格
-
-- C++20 标准及现代特性
-- RAII（资源获取即初始化）模式
+- C++20 标准和现代 C++ 实践
+- RAII (资源获取即初始化) 模式
 - 智能指针进行内存管理
-- 需要时的线程安全实现
+- 一致的命名约定 (方法使用驼峰命名法，变量使用下划线命名法)
+- 全面的错误处理
 
 ### 测试
 
-- Google Test 框架用于单元测试
-- 核心组件的全面测试覆盖
-- 端到端功能的集成测试
+- 使用 Google Test 框架进行单元测试
+- 测试位于 `tests/` 目录中
+- 构建后使用 `ctest` 运行测试
+- 所有新功能都应包含相应的测试
 
-### 错误处理
+### 工具开发
 
-- 异常安全设计
-- 适当的资源清理
-- 故障时的优雅降级
+创建新工具时：
 
-## 示例用法
+1. 使用 JSON 模式定义工具参数
+2. 实现执行逻辑
+3. 遵循线程安全的执行模式
+4. 优雅地处理错误并提供有意义的错误消息
+5. 在结果中包含适当的元数据
 
-SDK 包含一个简单示例，演示基本用法：
+## 配置选项
 
-```cpp
-// 创建配置
-Config config;
-config.id = "simple_example_agent";
-config.name = "Simple Example Agent";
-config.model = "gpt-4";
-config.api_key = "your-api-key";
+`Config` 结构提供了广泛的自定义选项：
 
-// 创建代理
-Agent agent(config);
+- **模型设置**: API 密钥、基础 URL、模型选择
+- **上下文管理**: 令牌限制、压缩阈值
+- **超时**: 步骤和会话超时
+- **工具配置**: 启用/禁用特定工具
+- **重试逻辑**: 最大重试次数、延迟和退避因子
+- **MCP 集成**: 服务器连接和超时
 
-// 创建一个简单工具
-Tool::Definition echo_def;
-echo_def.id = "echo_tool";
-echo_def.description = "回显输入文本";
-echo_def.parameters_schema = R"({
-    "type": "object",
-    "properties": {
-        "text": {
-            "type": "string",
-            "description": "要回显的文本"
-        }
-    },
-    "required": ["text"]
-})";
-echo_def.execute_func = [](const std::string& args, const ToolContext& ctx) -> ToolExecutionResult {
-    ToolExecutionResult result;
-    result.title = "回显工具结果";
-    result.output = "回显：" + args;
-    result.success = true;
-    return result;
-};
+## 贡献
 
-// 注册工具
-auto echo_tool = std::make_shared<Tool>(echo_def);
-agent.addTool(echo_tool);
+1. Fork 仓库
+2. 创建功能分支
+3. 按照编码标准进行更改
+4. 为新功能添加测试
+5. 提交带有清晰描述的拉取请求
 
-// 运行代理
-agent.run("example_session_123");
-```
+## 许可证
 
-## 项目结构
-
-- `include/agent_sdk/` - 公共头文件
-- `src/` - 源代码实现
-- `examples/` - 使用示例
-- `tests/` - 单元测试
-- `cmake/` - CMake 模块
-- `doc/` - 文档（如果存在）
+[在此处指定许可证 - 在检查的文件中未找到]
