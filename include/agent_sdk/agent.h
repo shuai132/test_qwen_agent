@@ -62,6 +62,12 @@ public:
      */
     void setMessageHandler(std::function<void(const Message&)> handler);
 
+    /**
+     * @brief 获取Agent ID
+     * @return Agent ID
+     */
+    const std::string& getId() const;
+
 private:
     class Impl;
     std::unique_ptr<Impl> pimpl_;

@@ -24,8 +24,8 @@ int main() {
   config.api_key = "dummy-key-for-example";  // 在实际应用中应使用真实密钥
   config.base_url = "https://api.openai.com/v1";
 
-  // 创建Agent
-  Agent agent(config);
+  // 创建Agent并保持其生命周期
+  auto agent = std::make_shared<Agent>(config);
 
   // 创建一个简单的工具示例
   Tool::Definition echo_def;
@@ -54,20 +54,20 @@ int main() {
 
   // 注册工具
   auto echo_tool = std::make_shared<Tool>(echo_def);
-  agent.addTool(echo_tool);
+  agent->addTool(echo_tool);
 
   std::cout << "Starting agent session..." << std::endl;
 
   // 启动Agent（在一个单独的线程中，因为run是阻塞的）
-  std::thread agent_thread([&agent]() {
-    agent.run("example_session_123");
+  std::thread agent_thread([agent]() {
+    agent->run("example_session_123");
   });
 
   // 等待一段时间然后停止
   std::this_thread::sleep_for(std::chrono::seconds(1));
 
   // 停止Agent
-  agent.stop();
+  agent->stop();
 
   if (agent_thread.joinable()) {
     agent_thread.join();

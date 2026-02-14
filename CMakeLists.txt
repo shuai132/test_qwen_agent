@@ -25,7 +25,7 @@ find_path(ASIO_INCLUDE_DIR asio.hpp
 if(ASIO_INCLUDE_DIR)
     include_directories(${ASIO_INCLUDE_DIR})
 else()
-    message(WARNING "Asio headers not found, assuming they are available via package manager")
+    message(FATAL_ERROR "Asio headers not found. Please install Asio library or download it to third_party/asio/include/")
 endif()
 
 # 包含目录
@@ -108,12 +108,21 @@ endif()
 option(BUILD_EXAMPLES "Build examples" ON)
 
 if(BUILD_EXAMPLES)
-    add_executable(simple_agent_example 
+    add_executable(simple_agent_example
         examples/simple_agent.cpp
     )
-    
+
+    add_executable(tool_call_example
+        examples/tool_call_example.cpp
+    )
+
     target_link_libraries(simple_agent_example agent_sdk)
-    target_include_directories(simple_agent_example PRIVATE 
+    target_link_libraries(tool_call_example agent_sdk)
+    
+    target_include_directories(simple_agent_example PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+    )
+    target_include_directories(tool_call_example PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/include
     )
 endif()

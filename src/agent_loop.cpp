@@ -195,32 +195,62 @@ class AgentLoop::Impl {
 
     if (!tool) {
       std::cerr << "Tool not found: " << tool_call.name << std::endl;
+      
+      // 创建工具未找到的错误结果消息
+      Message::Ptr error_msg = std::make_shared<Message>(MessageType::TOOL_RESULT, "");
+      ToolResult tool_result;
+      tool_result.call_id = tool_call.id;
+      tool_result.tool_name = tool_call.name;
+      tool_result.result = "Error: Tool not found - " + tool_call.name;
+      tool_result.success = false;
+      tool_result.error = "Tool not found";
+      error_msg->addToolResult(tool_result);
+
+      // 添加到会话
+      session->addMessage(error_msg);
       return;
     }
 
     // 创建工具执行上下文
     ToolContext context;
     context.session_id = session->getId();
-    context.agent_id = session->getConfig().id;  // 使用会话配置中的ID
+    context.agent_id = agent_->getId();  // 使用Agent的ID
     context.session = session;
 
-    // 执行工具
-    auto result = tool->execute(tool_call.arguments, context);
+    try {
+      // 执行工具
+      auto result = tool->execute(tool_call.arguments, context);
 
-    // 创建工具结果消息
-    Message::Ptr result_msg = std::make_shared<Message>(MessageType::TOOL_RESULT, "");
-    ToolResult tool_result;
-    tool_result.call_id = tool_call.id;
-    tool_result.tool_name = tool_call.name;
-    tool_result.result = result.output;
-    tool_result.success = result.success;
-    if (result.error.has_value()) {
-      tool_result.error = result.error.value();
+      // 创建工具结果消息
+      Message::Ptr result_msg = std::make_shared<Message>(MessageType::TOOL_RESULT, "");
+      ToolResult tool_result;
+      tool_result.call_id = tool_call.id;
+      tool_result.tool_name = tool_call.name;
+      tool_result.result = result.output;
+      tool_result.success = result.success;
+      if (result.error.has_value()) {
+        tool_result.error = result.error.value();
+      }
+      result_msg->addToolResult(tool_result);
+
+      // 添加到会话
+      session->addMessage(result_msg);
+    } catch (const std::exception& e) {
+      std::cerr << "Error executing tool " << tool_call.name << ": " << e.what() << std::endl;
+      
+      // 创建执行错误的结果消息
+      Message::Ptr error_msg = std::make_shared<Message>(MessageType::TOOL_RESULT, "");
+      ToolResult tool_result;
+      tool_result.call_id = tool_call.id;
+      tool_result.tool_name = tool_call.name;
+      tool_result.result = "Error executing tool: " + std::string(e.what());
+      tool_result.success = false;
+      tool_result.error = e.what();
+      error_msg->addToolResult(tool_result);
+
+      // 添加到会话
+      session->addMessage(error_msg);
     }
-    result_msg->addToolResult(tool_result);
-
-    // 添加到会话
-    session->addMessage(result_msg);
   }
 
   bool shouldRetry() {

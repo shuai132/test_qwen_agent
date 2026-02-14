@@ -124,4 +124,8 @@ void Agent::setMessageHandler(std::function<void(const Message&)> handler) {
   pimpl_->setMessageHandler(handler);
 }
 
+const std::string& Agent::getId() const {
+  return pimpl_->getId();
+}
+
 }  // namespace openagent
